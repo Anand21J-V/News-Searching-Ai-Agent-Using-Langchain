@@ -1,0 +1,45 @@
+import os
+os.environ["GROQ_API_KEY"] = "x"
+os.environ["TAVILY_API_KEY"] = "x"
+
+!pip install langchain-groq langchain-community langchain-core requests duckduckgo-search
+
+from langchain_groq import ChatGroq
+from langchain_core.tools import tool
+import requests
+
+from langchain_community.tools.tavily_search import TavilySearchResults
+search_tool = TavilySearchResults(api_key="TAVILY_API_KEY")
+results = search_tool.invoke("live score ind vs eng")
+
+llm = ChatGroq(model="llama-3.3-70b-versatile")  
+
+from langchain.agents import create_react_agent, AgentExecutor
+from langchain import hub
+
+!pip install langchainhub
+
+prompt = hub.pull("hwchase17/react")
+
+# Creating the ReAct agent manually with the pulled prompt  
+
+agent = create_react_agent(
+    llm = llm,
+    tools = [search_tool],
+    prompt = prompt
+)
+
+# Wrap it with AgentExecutor
+
+agent_executor = AgentExecutor(
+    agent=agent, 
+    tools=[search_tool], 
+    verbose=True,
+    handle_parsing_errors=True
+)
+
+  # Invoke 
+response = agent_executor.invoke({"input": "Score of India vs England Match 2025"})
+print(response)
+
+response["output"]
